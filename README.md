@@ -4,21 +4,49 @@ Expose bitcoind JSON-RPC and ZeroMQ ports from behind a TLS gateway.
 
 Useful for clients without native support for TLS, like bitcoin-cli.
 
+Automatically configure [stunnel](https://www.stunnel.org/) to expose
+[bitcoind](https://bitcoin.org/) JSON-RPC and ZeroMQ ports from behind a TLS
+gateway. Uses [haproxy](https://haproxy.org/) to add the `Host` header for RPC
+connections, and to open a working TCP channel for ZMQ.
+
 ## Usage
+
+### Inputs
+
+Required:
+- Set `TLS_HOST` to the remote TLS gateway (in front of the bitcoin node)
+- Set `RPC_PORT` to the JSON-RPC port of the bitcoin node
+  - mainnet: `8332` (default)
+  - testnet: `18332`
+  - signet: 38332 (includes mutinynet)
+
+Optional:
+- Set `ZMQ_PORT` to the ZeroMQ port of the bitcoin node (default `28332`)
+- Local port numbers match the remote ports by default. To override these:
+  - `RPC_PORT_LOCAL`
+  - `ZMQ_PORT_LOCAL`
+- Adjust `LOG_LEVEL` to increase or decrease verbosity of the stunnel+haproxy output (default: `notice`)
+  - Value must be a syslog level name (in order from quiet to noisy):
+    - `emerg`, `alert`, `crit`, `err`, `warning`, `notice`, `info`, `debug`
+  - Override a specific subsytem with `HAPROXY_LOG_LEVEL` or `STUNNEL_LOG_LEVEL`.
+- Adjust `LISTEN_HOST` if you want the proxy to listen on an interface other
+  than `127.0.0.1`
+
 
 ### Proxy usage
 
 Open a tunnel to a mainnet node (RPC port `8332`):
 
 ```shell
-BITCOIND_HOST=example.b.voltageapp.io
+export TLS_HOST=example.b.voltageapp.io
 
 docker run --name=bitcoind-proxy -d --rm \
   -p 8332:8332 \
   -p 28332:28332 \
-  -e BITCOIND_HOST \
+  -e TLS_HOST \
   bitcoind-tls-proxy:latest
 ```
+
 
 ### bitcoin-cli usage
 
@@ -35,10 +63,12 @@ bitcoin-cli -rpcconnect=localhost:$RPC_PORT \
   getblockchaininfo
 ```
 
+
 ### Other RPC client usage
 
 With the proxy running and connected, use your normal RPC connection parameters
 except replace the host with `localhost` or an equivalent IP (like `127.0.0.1`)
+
 
 ### ZeroMQ client usage
 
@@ -62,20 +92,21 @@ eedd6dfe38c5adc652047db5b1ec16d14f37fbfa400cd5e4b538e8c621ec5d52
 00000020f28c0448707f4ac2c849511c9a9c134a87332cf0209a0ecca963f6bb26010000525dec21c6e838b5e4d50c40fafb374fd116ecb1b57d0452c6adc538fe6dddee08c59966ae77031e48d00900
 ```
 
+
 ### Mutinynet
 
-Set `BITCOIND_RPC_PORT` to the desired port (`38332` for Mutinynet) and adjust
+Set `RPC_PORT` to the desired port (`38332` for Mutinynet) and adjust
 the exposed ports to match:
 
 ```shell
-BITCOIND_HOST=ugiywxatim.b.staging.voltageapp.io
-BITCOIND_RPC_PORT=38332
+export TLS_HOST=ugiywxatim.b.staging.voltageapp.io
+export RPC_PORT=38332
 
 docker run --name=bitcoind-proxy -d --rm \
   -p 38332:38332 \
   -p 28332:28332 \
-  -e BITCOIND_HOST \
-  -e BITCOIND_RPC_PORT \
+  -e TLS_HOST \
+  -e RPC_PORT \
   bitcoind-tls-proxy:latest
 ```
 
