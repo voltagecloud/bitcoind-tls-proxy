@@ -14,17 +14,17 @@ connections, and to open a working TCP channel for ZMQ.
 ### Inputs
 
 Required:
-- Set `TLS_HOST` to the remote TLS gateway (in front of the bitcoin node)
-- Set `RPC_PORT` to the JSON-RPC port of the bitcoin node
+- Set `BITCOIND_HOST` to the remote TLS gateway (in front of the bitcoin node)
+- Set `BITCOIND_RPC_PORT` to the JSON-RPC port of the bitcoin node
   - mainnet: `8332` (default)
   - testnet: `18332`
   - signet: 38332 (includes mutinynet)
 
 Optional:
-- Set `ZMQ_PORT` to the ZeroMQ port of the bitcoin node (default `28332`)
+- Set `BITCOIND_ZMQ_PORT` to the ZeroMQ port of the bitcoin node (default `28332`)
 - Local port numbers match the remote ports by default. To override these:
-  - `RPC_PORT_LOCAL`
-  - `ZMQ_PORT_LOCAL`
+  - `BITCOIND_RPC_PORT`
+  - `BITCOIND_ZMQ_PORT`
 - Adjust `LOG_LEVEL` to increase or decrease verbosity of the stunnel+haproxy output (default: `notice`)
   - Value must be a syslog level name (in order from quiet to noisy):
     - `emerg`, `alert`, `crit`, `err`, `warning`, `notice`, `info`, `debug`
@@ -38,13 +38,15 @@ Optional:
 Open a tunnel to a mainnet node (RPC port `8332`):
 
 ```shell
-export TLS_HOST=example.b.voltageapp.io
+docker build -t tls_proxy .
+
+export BITCOIND_HOST=ugiywxatim.b.staging.voltageapp.io
 
 docker run --name=bitcoind-proxy -d --rm \
-  -p 8332:8332 \
+  -p 38332:38332 \
   -p 28332:28332 \
-  -e TLS_HOST \
-  bitcoind-tls-proxy:latest
+  -e BITCOIND_ZMQ_PORT \
+  tls_proxy
 ```
 
 
@@ -99,15 +101,19 @@ Set `RPC_PORT` to the desired port (`38332` for Mutinynet) and adjust
 the exposed ports to match:
 
 ```shell
-export TLS_HOST=ugiywxatim.b.staging.voltageapp.io
-export RPC_PORT=38332
+docker build -t tls_proxy .
+
+export BITCOIND_HOST=ugiywxatim.b.staging.voltageapp.io
+export BITCOIND_RPC_PORT=38332
+export BITCOIND_ZMQ_PORT=28332
 
 docker run --name=bitcoind-proxy -d --rm \
   -p 38332:38332 \
   -p 28332:28332 \
-  -e TLS_HOST \
-  -e RPC_PORT \
-  bitcoind-tls-proxy:latest
+  -e BITCOIND_HOST \
+  -e BITCOIND_RPC_PORT \
+  -e BITCOIND_ZMQ_PORT \
+  tls_proxy
 ```
 
 With the proxy running, you can use bitcoin-cli exactly the same as
